@@ -13,9 +13,9 @@ ImGui :: #import "imgui"(LINK_STATIC=true);
 
 // Data
 g_Window : *SDL_Window = null;
-g_Time : u64;
-g_MousePressed := [3]bool.[false, false, false];
-g_MouseCursors := [ImGui.MouseCursor.COUNT]*SDL_Cursor;
+g_Time : float64;
+g_MousePressed : [3]bool = .[false, false, false];
+g_MouseCursors : [ImGui.MouseCursor.COUNT]*SDL_Cursor;
 g_ClipboardTextData : *u8 = null;
 g_MouseCanUseGlobalState := false;
 
@@ -25,11 +25,17 @@ ImGui_ImplSDL2_GetClipboardText :: (data : *void) -> *u8 #c_call
     //     SDL_free(g_ClipboardTextData);
     // g_ClipboardTextData = SDL_GetClipboardText();
     // return g_ClipboardTextData;
-    return SDL_GetClipboardText();
+    new_context: Context; // TODO: hide the context in the userdata pointer passed to us
+    push_context new_context {
+        return SDL_GetClipboardText();
+    }
 }
 
 ImGui_ImplSDL2_SetClipboardText :: ( data : *void, text : *u8) #c_call {
-    SDL_SetClipboardText(text);
+    new_context: Context; // TODO: hide the context in the userdata pointer passed to us
+    push_context new_context {
+        SDL_SetClipboardText(text);
+    }
 }
 
 // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -41,24 +47,24 @@ ImGui_ImplSDL2_ProcessEvent :: (event : *SDL_Event) -> bool {
     io := ImGui.GetIO();
     if event.type == {
     case .SDL_MOUSEWHEEL;
-            if (event->wheel.x > 0) io.MouseWheelH += 1;
-            if (event->wheel.x < 0) io.MouseWheelH -= 1;
-            if (event->wheel.y > 0) io.MouseWheel += 1;
-            if (event->wheel.y < 0) io.MouseWheel -= 1;
+            if (event.wheel.x > 0) io.MouseWheelH += 1;
+            if (event.wheel.x < 0) io.MouseWheelH -= 1;
+            if (event.wheel.y > 0) io.MouseWheel += 1;
+            if (event.wheel.y < 0) io.MouseWheel -= 1;
             return true;
     case .SDL_MOUSEBUTTONDOWN;
-            if (event->button.button == SDL_BUTTON_LEFT) g_MousePressed[0] = true;
-            if (event->button.button == SDL_BUTTON_RIGHT) g_MousePressed[1] = true;
-            if (event->button.button == SDL_BUTTON_MIDDLE) g_MousePressed[2] = true;
+            if (event.button.button == SDL_BUTTON_LEFT) g_MousePressed[0] = true;
+            if (event.button.button == SDL_BUTTON_RIGHT) g_MousePressed[1] = true;
+            if (event.button.button == SDL_BUTTON_MIDDLE) g_MousePressed[2] = true;
             return true;
     case .SDL_TEXTINPUT;
-            io.AddInputCharactersUTF8(event->text.text);
+            io.AddInputCharactersUTF8(io, xx event.text.text.data); // @@
             return true;
-    case SDL_KEYDOWN: #through
-    case SDL_KEYUP:
-            int key = event->key.keysym.scancode;
-            IM_ASSERT(key >= 0 && key < IM_ARRAYSIZE(io.KeysDown));
-            io.KeysDown[key] = (event->type == SDL_KEYDOWN);
+    case SDL_KEYDOWN; #through;
+    case SDL_KEYUP;
+            key := event.key.keysym.scancode;
+            assert(key >= 0 && xx key < io.KeysDown.count);
+            io.KeysDown[key] = (event.type == SDL_KEYDOWN);
             io.KeyShift = ((SDL_GetModState() & KMOD_SHIFT) != 0);
             io.KeyCtrl = ((SDL_GetModState() & KMOD_CTRL) != 0);
             io.KeyAlt = ((SDL_GetModState() & KMOD_ALT) != 0);
@@ -77,8 +83,8 @@ ImGui_ImplSDL2_Init :: (window : *SDL_Window) -> bool {
 
     // Setup backend capabilities flags
     io := ImGui.GetIO();
-    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;       // We can honor GetMouseCursor() values (optional)
-    io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;        // We can honor io.WantSetMousePos requests (optional, rarely used)
+    io.BackendFlags_ |= .HasMouseCursors;       // We can honor GetMouseCursor() values (optional)
+    io.BackendFlags_ |= .HasSetMousePos;        // We can honor io.WantSetMousePos requests (optional, rarely used)
     io.BackendPlatformName = "imgui_impl_sdl";
 
     // Keyboard mapping. Dear ImGui will use those indices to peek into the io.KeysDown[] array.
@@ -129,22 +135,21 @@ ImGui_ImplSDL2_Init :: (window : *SDL_Window) -> bool {
     //     if (strncmp(sdl_backend, global_mouse_whitelist[n], strlen(global_mouse_whitelist[n])) == 0)
     //         g_MouseCanUseGlobalState = true;
 
-#if OS == .WINDOWS {
-    wmInfo : SDL_SysWMinfo;
-    SDL_VERSION(*wmInfo.version);
-    SDL_GetWindowWMInfo(window, *wmInfo);
-    io.ImeWindowHandle = wmInfo.info.win.window;
-}
+// #if OS == .WINDOWS {
+//     wmInfo : SDL_SysWMinfo;
+//     SDL_VERSION(*wmInfo.version);
+//     SDL_GetWindowWMInfo(window, *wmInfo);
+//     io.ImeWindowHandle = wmInfo.info.win.window;
+// }
 
     return true;
 }
 
-bool ImGui_ImplSDL2_InitForOpenGL(SDL_Window* window, void* sdl_gl_context)
-{
+ImGui_ImplSDL2_InitForOpenGL :: (window : *SDL_Window, sdl_gl_context : *void) -> bool {
     return ImGui_ImplSDL2_Init(window);
 }
 
-ImGui_ImplSDL2_Shutdown() {
+ImGui_ImplSDL2_Shutdown :: () {
     // g_Window = NULL;
 
     // // Destroy last known clipboard data
@@ -158,42 +163,42 @@ ImGui_ImplSDL2_Shutdown() {
     // memset(g_MouseCursors, 0, sizeof(g_MouseCursors));
 }
 
-ImGui_ImplSDL2_UpdateMousePosAndButtons() {
+ImGui_ImplSDL2_UpdateMousePosAndButtons :: () {
     io := ImGui.GetIO();
 
     // Set OS mouse position if requested (rarely used, only when ImGuiConfigFlags_NavEnableSetMousePos is enabled by user)
     if (io.WantSetMousePos)
         SDL_WarpMouseInWindow(g_Window, xx io.MousePos.x, xx io.MousePos.y);
     else
-        io.MousePos = ImVec2(-FLOAT32_MAX, -FLOAT32_MAX);
+        io.MousePos = ImGui.make_ImVec2(-FLOAT32_MAX, -FLOAT32_MAX);
 
-    mx, my : int;
+    mx, my : s32;
     mouse_buttons := SDL_GetMouseState(*mx, *my);
-    io.MouseDown[0] = g_MousePressed[0] || (mouse_buttons & SDL_BUTTON(.SDL_BUTTON_LEFT)) != 0;  // If a mouse press event came, always pass it as "mouse held this frame", so we don't miss click-release events that are shorter than 1 frame.
-    io.MouseDown[1] = g_MousePressed[1] || (mouse_buttons & SDL_BUTTON(.SDL_BUTTON_RIGHT)) != 0;
-    io.MouseDown[2] = g_MousePressed[2] || (mouse_buttons & SDL_BUTTON(.SDL_BUTTON_MIDDLE)) != 0;
+    io.MouseDown[0] = g_MousePressed[0] || (mouse_buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0;  // If a mouse press event came, always pass it as "mouse held this frame", so we don't miss click-release events that are shorter than 1 frame.
+    io.MouseDown[1] = g_MousePressed[1] || (mouse_buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) != 0;
+    io.MouseDown[2] = g_MousePressed[2] || (mouse_buttons & SDL_BUTTON(SDL_BUTTON_MIDDLE)) != 0;
     g_MousePressed[0], g_MousePressed[1], g_MousePressed[2] = false, false, false;
 
     if (SDL_GetWindowFlags(g_Window) & .SDL_WINDOW_INPUT_FOCUS)
-        io.MousePos = ImVec2((float)mx, (float)my);
+        io.MousePos = ImGui.make_ImVec2(xx mx, xx my);
 }
 
 ImGui_ImplSDL2_UpdateMouseCursor :: () {
     io := ImGui.GetIO();
-    if (io.ConfigFlags & .NoMouseCursorChange)
+    if (io.ConfigFlags_ & .NoMouseCursorChange)
         return;
 
     imgui_cursor := ImGui.GetMouseCursor();
     if (io.MouseDrawCursor || imgui_cursor == .None)
     {
         // Hide OS mouse cursor if imgui is drawing it or if it wants no cursor
-        SDL_ShowCursor(.SDL_FALSE);
+        SDL_ShowCursor(xx SDL_FALSE);
     }
     else
     {
         // Show OS mouse cursor
-        SDL_SetCursor(g_MouseCursors[imgui_cursor] ? g_MouseCursors[imgui_cursor] : g_MouseCursors[ImGui.MouseCursor.Arrow]);
-        SDL_ShowCursor(.SDL_TRUE);
+        SDL_SetCursor(ifx g_MouseCursors[imgui_cursor] then g_MouseCursors[imgui_cursor] else g_MouseCursors[ImGui.MouseCursor.Arrow]);
+        SDL_ShowCursor(xx SDL_TRUE);
     }
 }
 
@@ -241,7 +246,7 @@ ImGui_ImplSDL2_UpdateGamepads :: () {
 
 ImGui_ImplSDL2_NewFrame :: (window : *SDL_Window) {
     io := ImGui.GetIO();
-    assert(io.Fonts.IsBuilt(), "Font atlas not built! It is generally built by the renderer backend. Missing call to renderer _NewFrame() function? e.g. ImGui_ImplOpenGL3_NewFrame().");
+    // assert(io.Fonts.IsBuilt(), "Font atlas not built! It is generally built by the renderer backend. Missing call to renderer _NewFrame() function? e.g. ImGui_ImplOpenGL3_NewFrame().");
 
     // Setup display size (every frame to accommodate for window resizing)
     w, h : s32;
@@ -250,9 +255,9 @@ ImGui_ImplSDL2_NewFrame :: (window : *SDL_Window) {
     if (SDL_GetWindowFlags(window) & .SDL_WINDOW_MINIMIZED)
         w, h = 0, 0;
     SDL_GL_GetDrawableSize(window, *display_w, *display_h);
-    io.DisplaySize = ImGui.ImVec2.{xx w, xx h};
+    io.DisplaySize = ImGui.make_ImVec2(xx w, xx h);
     if (w > 0 && h > 0)
-        io.DisplayFramebufferScale = ImGui.ImVec2.{cast(float) display_w / w, cast(float)display_h / h};
+        io.DisplayFramebufferScale = ImGui.make_ImVec2(cast(float) display_w / w, cast(float)display_h / h);
 
     // // Setup time step (we don't use SDL_GetTicks() because it is using millisecond resolution)
     // static Uint64 frequency = SDL_GetPerformanceFrequency();
