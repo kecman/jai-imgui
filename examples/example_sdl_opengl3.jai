@@ -4,7 +4,7 @@
 // If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
 // Read online: https://github.com/ocornut/imgui/tree/master/docs
 
-ImGui :: #import "imgui"(LINK_STATIC=true);
+// ImGui :: #import "imgui"(LINK_STATIC=true);
 #load "imgui_impl_sdl.jai"; // SDL platform backend
 #load "imgui_impl_opengl3.jai"; // OpenGL renderer backend
 #import "Basic";
@@ -12,7 +12,7 @@ ImGui :: #import "imgui"(LINK_STATIC=true);
 #import "GL";
 
 f : float = 0.0;
-counter : int = 0;
+counter : s32 = 0;
 
 main :: () {
     // Setup SDL
@@ -27,7 +27,7 @@ main :: () {
     // GL 3.0 + GLSL 130
     glsl_version :: "#version 130";
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, xx SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
@@ -94,7 +94,7 @@ main :: () {
     // Our state
     show_demo_window := true;
     show_another_window := false;
-    clear_color = ImGui.ImVec4(0.45, 0.55, 0.60, 1.00);
+    clear_color := ImGui.make_ImVec4(0.45, 0.55, 0.60, 1.00);
 
     // Main loop
     done := false;
@@ -104,7 +104,7 @@ main :: () {
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
         // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
-        SDL_Event event;
+        event : SDL_Event ;
         while SDL_PollEvent(*event) {
             ImGui_ImplSDL2_ProcessEvent(*event);
             if event.type == {
@@ -135,9 +135,9 @@ main :: () {
             ImGui.Checkbox("Another Window", *show_another_window);
 
             ImGui.SliderFloat("float", *f, 0.0, 1.0);
-            ImGui.ColorEdit3("clear color", *clear_color);
+            ImGui.ColorEdit3("clear color", xx *clear_color);
 
-            if (ImGui.Button("Button")) counter++;
+            if (ImGui.Button("Button")) counter += 1;
             ImGui.SameLine();
             ImGui.Text("counter = %d", counter);
 
@@ -163,7 +163,7 @@ main :: () {
         // Update and Render additional Platform Windows
         // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
         //  For this specific demo app we could also call SDL_GL_MakeCurrent(window, gl_context) directly)
-        if io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable {
+        if io.ConfigFlags_ & .ViewportsEnable {
             backup_current_window := SDL_GL_GetCurrentWindow();
             backup_current_context := SDL_GL_GetCurrentContext();
             ImGui.UpdatePlatformWindows();
