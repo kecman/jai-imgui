@@ -6,42 +6,24 @@ IMGUI_USE_BGRA_PACKED_COLOR :: true; // @@
 // - Embedded GL: ES 2.0 (WebGL 1.0), ES 3.0 (WebGL 2.0)
 // This needs to be used along with a Platform Backend (e.g. GLFW, SDL, Win32, custom..)
 
-//----------------------------------------
-// OpenGL    GLSL      GLSL
-// version   version   string
-//----------------------------------------
-//  2.0       110       "#version 110"
-//  2.1       120       "#version 120"
-//  3.0       130       "#version 130"
-//  3.1       140       "#version 140"
-//  3.2       150       "#version 150"
-//  3.3       330       "#version 330 core"
-//  4.0       400       "#version 400 core"
-//  4.1       410       "#version 410 core"
-//  4.2       420       "#version 410 core"
-//  4.3       430       "#version 430 core"
-//  ES 2.0    100       "#version 100"      = WebGL 1.0
-//  ES 3.0    300       "#version 300 es"   = WebGL 2.0
-//----------------------------------------
-
 // ImGui :: #import "imgui"(LINK_STATIC=true);
 #import "GL";
 
 // OpenGL Data
-g_GlVersion : GLuint = 0;                // Extracted at runtime using GL_MAJOR_VERSION, GL_MINOR_VERSION queries (e.g. 320 for GL 3.2)
-g_GlslVersionString : string = "";   // Specified by user or detected based on compile time GL settings.
-g_FontTexture : GLuint = 0;
-g_ShaderHandle : GLuint = 0;
-g_VertHandle : GLuint = 0;
-g_FragHandle : GLuint = 0;
-g_AttribLocationTex : GLint = 0;
-g_AttribLocationProjMtx : GLint = 0;
-g_AttribLocationVtxPos : GLuint = 0;
-g_AttribLocationVtxUV : GLuint = 0;
+g_GlVersion :              GLuint = 0;                // Extracted at runtime using GL_MAJOR_VERSION, GL_MINOR_VERSION queries (e.g. 320 for GL 3.2)
+g_GlslVersionString :      string = "";   // Specified by user or detected based on compile time GL settings.
+g_FontTexture :            GLuint = 0;
+g_ShaderHandle :           GLuint = 0;
+g_VertHandle :             GLuint = 0;
+g_FragHandle :             GLuint = 0;
+g_AttribLocationTex :      GLint = 0;
+g_AttribLocationProjMtx :  GLint = 0;
+g_AttribLocationVtxPos :   GLuint = 0;
+g_AttribLocationVtxUV :    GLuint = 0;
 g_AttribLocationVtxColor : GLuint = 0;
-g_VboHandle : u32 = 0;
-g_ElementsHandle : u32 = 0;
-g_HasClipOrigin : bool = false;
+g_VboHandle :              u32 = 0;
+g_ElementsHandle :         u32 = 0;
+g_HasClipOrigin :          bool = false;
 
 ImGui_ImplOpenGL3_Init :: (glsl_version : *u8) -> bool {
     // Query for GL version (e.g. 320 for GL 3.2)
@@ -50,13 +32,13 @@ ImGui_ImplOpenGL3_Init :: (glsl_version : *u8) -> bool {
     glGetIntegerv(GL_MAJOR_VERSION, *major);
     glGetIntegerv(GL_MINOR_VERSION, *minor);
     assert(major != 0);
-    assert(minor != 0);
     // if (major == 0 && minor == 0) {
     //     // Query GL_VERSION in desktop GL 2.x, the string will start with "<major>.<minor>"
     //     gl_version : *GLubyte = glGetString(GL_VERSION);
     //     sscanf(gl_version, "%d.%d", &major, &minor);
     // }
     g_GlVersion = cast(GLuint)(major * 100 + minor * 10);
+    print("g_GlVersion = %\n", g_GlVersion);
 
     // Setup backend capabilities flags
     io := ImGui.GetIO();
@@ -68,9 +50,7 @@ ImGui_ImplOpenGL3_Init :: (glsl_version : *u8) -> bool {
     // Store GLSL version string so we can refer to it later in case we recreate shaders.
     // Note: GLSL version is NOT the same as GL version. Leave this to NULL if unsure.
     if glsl_version == "" glsl_version = "#version 130";
-    // IM_ASSERT((int)strlen(glsl_version) + 2 < IM_ARRAYSIZE(g_GlslVersionString));
-    // strcpy(g_GlslVersionString, glsl_version);
-    // strcat(g_GlslVersionString, "\n");
+    g_GlslVersionString = to_string(glsl_version);
 
     // Make an arbitrary GL call (we don't actually need the result)
     // IF YOU GET A CRASH HERE: it probably means that you haven't initialized the OpenGL function loader used by this code.
@@ -80,16 +60,6 @@ ImGui_ImplOpenGL3_Init :: (glsl_version : *u8) -> bool {
 
     // Detect extensions we support
     g_HasClipOrigin = (g_GlVersion >= 450);
-// #ifdef IMGUI_IMPL_OPENGL_MAY_HAVE_EXTENSIONS
-//     GLint num_extensions = 0;
-//     glGetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
-//     for (GLint i = 0; i < num_extensions; i++)
-//     {
-//         const char* extension = (const char*)glGetStringi(GL_EXTENSIONS, i);
-//         if (extension != NULL && strcmp(extension, "GL_ARB_clip_control") == 0)
-//             g_HasClipOrigin = true;
-//     }
-// #endif
 
     if (io.ConfigFlags_ & .ViewportsEnable)
         ImGui_ImplOpenGL3_InitPlatformInterface();
@@ -120,17 +90,6 @@ ImGui_ImplOpenGL3_SetupRenderState :: (draw_data : *ImGui.ImDrawData, fb_width :
         glDisable(GL_PRIMITIVE_RESTART);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    // Support for GL 4.5 rarely used glClipControl(GL_UPPER_LEFT)
-// #if defined(GL_CLIP_ORIGIN)
-//     bool clip_origin_lower_left = true;
-//     if (g_HasClipOrigin)
-//     {
-//         GLenum current_clip_origin = 0; glGetIntegerv(GL_CLIP_ORIGIN, (GLint*)&current_clip_origin);
-//         if (current_clip_origin == GL_UPPER_LEFT)
-//             clip_origin_lower_left = false;
-//     }
-// #endif
-
     // Setup viewport, orthographic projection matrix
     // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayPos is (0,0) for single viewport apps.
     glViewport(0, 0, cast(GLsizei)fb_width, cast(GLsizei)fb_height);
@@ -138,21 +97,8 @@ ImGui_ImplOpenGL3_SetupRenderState :: (draw_data : *ImGui.ImDrawData, fb_width :
     R := draw_data.DisplayPos.x + draw_data.DisplaySize.x;
     T := draw_data.DisplayPos.y;
     B := draw_data.DisplayPos.y + draw_data.DisplaySize.y;
-// #if defined(GL_CLIP_ORIGIN)
-//     if (!clip_origin_lower_left) { float tmp = T; T = B; B = tmp; } // Swap top and bottom if origin is upper left
-// #endif
-    // ortho_projection : [4][4]float =
-    // .[
-    //     .[ 2.0/(R-L),   0.0,         0.0,   0.0 ],
-    //     .[ 0.0,         2.0/(T-B),   0.0,   0.0 ],
-    //     .[ 0.0,         0.0,        -1.0,   0.0 ],
-    //     .[ (R+L)/(L-R),  (T+B)/(B-T),  0.0,   1.0 ],
-    // ];
-
-    // ortho_projection := orthographic_projection_matrix(0, io.DisplaySize.x, io.DisplaySize.y, 0, 0, 1);
     ortho_projection := orthographic_projection_matrix(L, R, B, T, 0, 1);
     ortho_projection = transpose(ortho_projection);
-
 
     glUseProgram(g_ShaderHandle);
     glUniform1i(g_AttribLocationTex, 0);
@@ -169,14 +115,6 @@ ImGui_ImplOpenGL3_SetupRenderState :: (draw_data : *ImGui.ImDrawData, fb_width :
     glEnableVertexAttribArray(g_AttribLocationVtxPos);
     glEnableVertexAttribArray(g_AttribLocationVtxUV);
     glEnableVertexAttribArray(g_AttribLocationVtxColor);
-
-    // @@ Is there a function to easily get the offset of a member?
-    //ImGui.ImDrawVert :: struct {
-    //   pos: ImVec2;       // 0
-    //   uv: ImVec2;        // 8
-    //   col: s32;          // 16
-    //}
-
     glVertexAttribPointer(g_AttribLocationVtxPos, 2, GL_FLOAT, GL_FALSE, size_of(ImGui.ImDrawVert), xx 0);
     glVertexAttribPointer(g_AttribLocationVtxUV, 2, GL_FLOAT, GL_FALSE, size_of(ImGui.ImDrawVert), xx 8);
     glVertexAttribPointer(g_AttribLocationVtxColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, size_of(ImGui.ImDrawVert), xx 16);
@@ -198,7 +136,8 @@ ImGui_ImplOpenGL3_RenderDrawData :: (draw_data : *ImGui.ImDrawData) {
         return;
 
     // Backup GL state
-    last_active_texture : GLenum;       glGetIntegerv(GL_ACTIVE_TEXTURE, xx *last_active_texture); glActiveTexture(GL_TEXTURE0);
+    last_active_texture : GLenum;       glGetIntegerv(GL_ACTIVE_TEXTURE, xx *last_active_texture);
+    glActiveTexture(GL_TEXTURE0);
     last_program : GLuint;              glGetIntegerv(GL_CURRENT_PROGRAM, xx *last_program);
     last_texture : GLuint;              glGetIntegerv(GL_TEXTURE_BINDING_2D, xx *last_texture);
     last_sampler : GLuint;              if (g_GlVersion >= 330) glGetIntegerv(GL_SAMPLER_BINDING, xx *last_sampler);
@@ -238,12 +177,13 @@ ImGui_ImplOpenGL3_RenderDrawData :: (draw_data : *ImGui.ImDrawData) {
         cmd_list := draw_data.CmdLists[n];
 
         // Upload vertex/index buffers
-        glBufferData(GL_ARRAY_BUFFER, cast(GLsizeiptr)cmd_list.VtxBuffer.Size * 2, xx cmd_list.VtxBuffer.Data, GL_STREAM_DRAW);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, cast(GLsizeiptr)cmd_list.IdxBuffer.Size * 2, xx cmd_list.IdxBuffer.Data, GL_STREAM_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, cast(GLsizeiptr)cmd_list.VtxBuffer.Size * size_of(ImGui.ImDrawVert), xx cmd_list.VtxBuffer.Data, GL_STREAM_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, cast(GLsizeiptr)cmd_list.IdxBuffer.Size * size_of(ImGui.ImDrawIdx), xx cmd_list.IdxBuffer.Data, GL_STREAM_DRAW);
 
         for cmd_i : 0..cmd_list.CmdBuffer.Size - 1 {
             pcmd := *cmd_list.CmdBuffer.Data[cmd_i];
             if pcmd.UserCallback {
+                // @@
                 // User callback, registered via ImDrawList::AddCallback()
                 // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
                 // if pcmd.UserCallback == ImDrawCallback_ResetRenderState)
@@ -266,10 +206,18 @@ ImGui_ImplOpenGL3_RenderDrawData :: (draw_data : *ImGui.ImDrawData) {
 
                     // Bind texture, Draw
                     glBindTexture(GL_TEXTURE_2D, xx pcmd.TextureId);
-                    if (g_GlVersion >= 320)
-                        glDrawElementsBaseVertex(GL_TRIANGLES, xx pcmd.ElemCount, GL_UNSIGNED_SHORT, xx (pcmd.IdxOffset * 2), xx pcmd.VtxOffset);
-                    else
-                        glDrawElements(GL_TRIANGLES, xx pcmd.ElemCount, GL_UNSIGNED_SHORT, xx (pcmd.IdxOffset * 2));
+                    // glBindTexture(GL_TEXTURE_2D, xx io.Fonts.TexID);
+                    if (g_GlVersion >= 320) {
+                        itype : GLenum = GL_UNSIGNED_INT;
+                        if size_of(ImGui.ImDrawIdx) == 2 itype = GL_UNSIGNED_SHORT;
+
+                        glDrawElementsBaseVertex(GL_TRIANGLES, xx pcmd.ElemCount, itype, xx (pcmd.IdxOffset * size_of(ImGui.ImDrawIdx)), xx pcmd.VtxOffset);
+                    } else {
+                        itype : GLenum = GL_UNSIGNED_INT;
+                        if size_of(ImGui.ImDrawIdx) == 2 itype = GL_UNSIGNED_SHORT;
+
+                        glDrawElements(GL_TRIANGLES, xx pcmd.ElemCount, itype, xx (pcmd.IdxOffset * size_of(ImGui.ImDrawIdx)));
+                    }
                 }
             }
         }
@@ -303,10 +251,14 @@ ImGui_ImplOpenGL3_RenderDrawData :: (draw_data : *ImGui.ImDrawData) {
 ImGui_ImplOpenGL3_CreateFontsTexture :: () -> bool{
     // Build texture atlas
     io := ImGui.GetIO();
+    assert(io != null);
+    assert(io.Fonts != null);
+
     pixels : *u8 = null;
     width, height : s32;
-    assert(io.Fonts != null);
+
     io.Fonts.GetTexDataAsAlpha8(io.Fonts, *pixels, *width, *height);
+    // io.Fonts.GetTexDataAsRGBA32(io.Fonts, *pixels, *width, *height);
     assert(pixels != null);
     assert(width > 0);
     assert(height > 0);
@@ -319,10 +271,9 @@ ImGui_ImplOpenGL3_CreateFontsTexture :: () -> bool{
     glBindTexture(GL_TEXTURE_2D, g_FontTexture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-// #ifdef GL_UNPACK_ROW_LENGTH
-//     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-// #endif
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, xx width, xx height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    // glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, xx width, xx height, 0, GL_RED, GL_UNSIGNED_BYTE, pixels);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, xx width, xx height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     // Store our identifier
     io.Fonts.TexID = xx g_FontTexture;
@@ -381,136 +332,6 @@ ImGui_ImplOpenGL3_CreateDeviceObjects :: () -> bool {
     glGetIntegerv(GL_TEXTURE_BINDING_2D, *last_texture);
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, *last_array_buffer);
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, *last_vertex_array);
-
-/*
-    // Parse GLSL version string
-    glsl_version : s32 = 130;
-    g_GlslVersionString = sprint("#version %", glsl_version);
-
-    const GLchar* vertex_shader_glsl_120 =
-        "uniform mat4 ProjMtx;\n"
-        "attribute vec2 Position;\n"
-        "attribute vec2 UV;\n"
-        "attribute vec4 Color;\n"
-        "varying vec2 Frag_UV;\n"
-        "varying vec4 Frag_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Frag_UV = UV;\n"
-        "    Frag_Color = Color;\n"
-        "    gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
-        "}\n";
-
-    const GLchar* vertex_shader_glsl_130 =
-        "uniform mat4 ProjMtx;\n"
-        "in vec2 Position;\n"
-        "in vec2 UV;\n"
-        "in vec4 Color;\n"
-        "out vec2 Frag_UV;\n"
-        "out vec4 Frag_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Frag_UV = UV;\n"
-        "    Frag_Color = Color;\n"
-        "    gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
-        "}\n";
-
-    const GLchar* vertex_shader_glsl_300_es =
-        "precision mediump float;\n"
-        "layout (location = 0) in vec2 Position;\n"
-        "layout (location = 1) in vec2 UV;\n"
-        "layout (location = 2) in vec4 Color;\n"
-        "uniform mat4 ProjMtx;\n"
-        "out vec2 Frag_UV;\n"
-        "out vec4 Frag_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Frag_UV = UV;\n"
-        "    Frag_Color = Color;\n"
-        "    gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
-        "}\n";
-
-    const GLchar* vertex_shader_glsl_410_core =
-        "layout (location = 0) in vec2 Position;\n"
-        "layout (location = 1) in vec2 UV;\n"
-        "layout (location = 2) in vec4 Color;\n"
-        "uniform mat4 ProjMtx;\n"
-        "out vec2 Frag_UV;\n"
-        "out vec4 Frag_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Frag_UV = UV;\n"
-        "    Frag_Color = Color;\n"
-        "    gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
-        "}\n";
-
-    const GLchar* fragment_shader_glsl_120 =
-        "#ifdef GL_ES\n"
-        "    precision mediump float;\n"
-        "#endif\n"
-        "uniform sampler2D Texture;\n"
-        "varying vec2 Frag_UV;\n"
-        "varying vec4 Frag_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    gl_FragColor = Frag_Color * texture2D(Texture, Frag_UV.st);\n"
-        "}\n";
-
-    const GLchar* fragment_shader_glsl_130 =
-        "uniform sampler2D Texture;\n"
-        "in vec2 Frag_UV;\n"
-        "in vec4 Frag_Color;\n"
-        "out vec4 Out_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n"
-        "}\n";
-
-    const GLchar* fragment_shader_glsl_300_es =
-        "precision mediump float;\n"
-        "uniform sampler2D Texture;\n"
-        "in vec2 Frag_UV;\n"
-        "in vec4 Frag_Color;\n"
-        "layout (location = 0) out vec4 Out_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n"
-        "}\n";
-
-    const GLchar* fragment_shader_glsl_410_core =
-        "in vec2 Frag_UV;\n"
-        "in vec4 Frag_Color;\n"
-        "uniform sampler2D Texture;\n"
-        "layout (location = 0) out vec4 Out_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n"
-        "}\n";
-
-    // Select shaders matching our GLSL versions
-    const GLchar* vertex_shader = NULL;
-    const GLchar* fragment_shader = NULL;
-    if (glsl_version < 130)
-    {
-        vertex_shader = vertex_shader_glsl_120;
-        fragment_shader = fragment_shader_glsl_120;
-    }
-    else if (glsl_version >= 410)
-    {
-        vertex_shader = vertex_shader_glsl_410_core;
-        fragment_shader = fragment_shader_glsl_410_core;
-    }
-    else if (glsl_version == 300)
-    {
-        vertex_shader = vertex_shader_glsl_300_es;
-        fragment_shader = fragment_shader_glsl_300_es;
-    }
-    else
-    {
-        vertex_shader = vertex_shader_glsl_130;
-        fragment_shader = fragment_shader_glsl_130;
-    }
-    */
 
     vertex_shader := tprint(#string END
         #version 330

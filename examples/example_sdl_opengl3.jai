@@ -14,6 +14,22 @@
 f : float = 0.0;
 counter : s32 = 0;
 
+ctx: *ImGui.Context;
+_imgui_alloc_context: Context;
+c_alloc :: (sz: u64, userdata: *void) -> *void #c_call { push_context << cast(*Context)userdata { return alloc(cast(s64)sz); } }
+c_free :: (ptr: *void, userdata: *void) -> void #c_call { push_context << cast(*Context)userdata { free(ptr); } }
+
+ImGui_Impl_CreateContext :: ($set_default_allocators := true) {
+    #if set_default_allocators {
+        _imgui_alloc_context = context;
+        ImGui.SetAllocatorFunctions(c_alloc, c_free, *_imgui_alloc_context);
+    }
+
+    ctx = ImGui.CreateContext();
+    io := ImGui.GetIO();
+    io.ConfigFlags_ |= .DockingEnable;
+}
+
 main :: () {
     // Setup SDL
     // (Some versions of SDL before <2.0.10 appears to have performance/stalling issues on a minority of Windows systems,
@@ -47,11 +63,14 @@ main :: () {
     SDL_GL_SetSwapInterval(1); // Enable vsync
 
     // Initialize OpenGL loader
-    gl_load(*gl, SDL_GL_CreateContext(window));
+    gl_load(*gl, SDL_GL_GetProcAddress);
 
     // Setup Dear ImGui context
     // IMGUI_CHECKVERSION();
-    ImGui.CreateContext();
+    ImGui_Impl_CreateContext();
+    assert(ctx != null, "must call create context");
+    ImGui.SetCurrentContext(ctx);
+
     io := ImGui.GetIO();
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls

@@ -236,10 +236,10 @@ ImGui_Impl_CreateFontsTexture :: (using ui_state: *UI_State) -> bool {
     width, height: s32;
     assert(io.Fonts != null);
     io.Fonts.GetTexDataAsAlpha8(io.Fonts, *pixels, *width, *height);
+    // io.Fonts.GetTexDataAsRGBA32(io.Fonts, *pixels, *width, *height);
     assert(pixels != null);
     assert(width > 0);
     assert(height > 0);
-    //io.Fonts.GetTexDataAsRGBA32(io.Fonts, *pixels, *width, *height);
 
     // Upload texture to graphics system
     last_texture: GLuint;
