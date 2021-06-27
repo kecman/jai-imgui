@@ -939,7 +939,8 @@ create_variable_declaration :: (cur: CXCursor, parent: CXCursor, parent_func: *F
             if first_child.kind == {
                 case .CXCursor_IntegerLiteral;
                     assign_from_integer_lit(decl, first_child, cur, verbose=verbose);
-                case .CXCursor_CXXNullPtrLiteralExpr;
+                case .CXCursor_CXXNullPtrLiteralExpr; #through;
+                case .CXCursor_GNUNullExpr;
                     decl.expression = create_literal("null");
                 case .CXCursor_TemplateRef;
                     // nothing
@@ -2382,7 +2383,7 @@ os_load_library_helper :: (paths_in: [] string, name: string) -> type_of(Library
     }
 
     for paths {
-        tpath := concatenate(it, PATH_SEPARATOR_STRING, name, "\0");
+        tpath := join(it, PATH_SEPARATOR_STRING, name, "\0");
         print("full path: %\n", tpath);
 
         #if OS == .WINDOWS {
@@ -2405,7 +2406,7 @@ os_load_library_helper :: (paths_in: [] string, name: string) -> type_of(Library
 }
 
 os_load_library :: (paths: [] string, name: string) -> type_of(Library_Info.handle), is_system: bool {
-    suf := concatenate(name, DLL_SUFFIX);
+    suf := join(name, DLL_SUFFIX);
     defer free(suf);
 
     handle := os_load_library_helper(paths, suf);
@@ -2516,7 +2517,7 @@ generate_bindings :: (opts: Generate_Bindings_Options) -> (has_error: bool) {
     init_compiler_context(*context);
     context.opts = opts;
 
-    //print("OPTS:\n%\n", formatStruct(context.opts, use_newlines_if_long_form=true));
+    // print("OPTS:\n%\n", formatStruct(context.opts, use_newlines_if_long_form=true));
 
     //assert(*context.global_scope.members == *context.compiler.global_scope.members); // Jai compiler bug
     //print("first global_scope.members: %\n", *context.compiler.global_scope.members);
@@ -2556,7 +2557,7 @@ generate_bindings :: (opts: Generate_Bindings_Options) -> (has_error: bool) {
     defer clang_disposeTranslationUnit(tu);
 
     if err != 0 {
-        print("Clang returned errror code %\n", err);
+        print("Clang returned error code %\n", err);
         has_error = true;
     }
 
@@ -2570,7 +2571,7 @@ generate_bindings :: (opts: Generate_Bindings_Options) -> (has_error: bool) {
         }
         str := clang_formatDiagnostic(diag, clang_defaultDiagnosticDisplayOptions());
         msg := to_string(clang_getCString(str));
-        print("%", msg);
+        print("%\n", msg);
         clang_disposeString(str);
     }
 
