@@ -3,11 +3,6 @@
 // (Info: SDL2 is a cross-platform general purpose library for handling windows, inputs, graphics context creation, etc.)
 // (Requires: SDL 2.0. Prefer SDL 2.0.4+ for full feature support.)
 
-ImGui :: #import "imgui"(LINK_STATIC=true);
-
-#import "SDL";
-#import "Math";
-
 // #define SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE    SDL_VERSION_ATLEAST(2,0,4)
 // #define SDL_HAS_VULKAN                      SDL_VERSION_ATLEAST(2,0,6)
 
@@ -277,3 +272,9 @@ ImGui_ImplSDL2_NewFrame :: (window : *SDL_Window) {
     // Update game controllers (if enabled and available)
     ImGui_ImplSDL2_UpdateGamepads();
 }
+
+#scope_file
+ImGui :: #import "imgui"(LINK_STATIC=true);
+
+#import "SDL";
+#import "Math";

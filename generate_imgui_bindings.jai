@@ -181,7 +181,7 @@ imgui_get_function_arg_for_printing :: (func: *Function, mode: Arg_Print_Mode) -
 // Extra Jai code for the bindings
 imgui_preamble := #string END
 
-#module_parameters(LINK_STATIC := false);
+#module_parameters(LINK_STATIC := false, IMGUI_USE_BGRA_PACKED_COLOR := true);
 
 #if OS == .WINDOWS {
     #if LINK_STATIC {

@@ -1,17 +1,11 @@
-// #module_parameters(IMGUI_USE_BGRA_PACKED_COLOR := true);
-IMGUI_USE_BGRA_PACKED_COLOR :: true; // @@
-
 // dear imgui: Renderer Backend for modern OpenGL with shaders / programmatic pipeline
 // - Desktop GL: 2.x 3.x 4.x
 // - Embedded GL: ES 2.0 (WebGL 1.0), ES 3.0 (WebGL 2.0)
 // This needs to be used along with a Platform Backend (e.g. GLFW, SDL, Win32, custom..)
 
-// ImGui :: #import "imgui"(LINK_STATIC=true);
-#import "GL";
-
 // OpenGL Data
-g_GlVersion :              GLuint = 0;                // Extracted at runtime using GL_MAJOR_VERSION, GL_MINOR_VERSION queries (e.g. 320 for GL 3.2)
-g_GlslVersionString :      string = "";   // Specified by user or detected based on compile time GL settings.
+g_GlVersion :              GLuint = 0;   // Extracted at runtime using GL_MAJOR_VERSION, GL_MINOR_VERSION queries (e.g. 320 for GL 3.2)
+g_GlslVersionString :      string = "";  // Specified by user or detected based on compile time GL settings.
 g_FontTexture :            GLuint = 0;
 g_ShaderHandle :           GLuint = 0;
 g_VertHandle :             GLuint = 0;
@@ -125,13 +119,9 @@ ImGui_ImplOpenGL3_SetupRenderState :: (draw_data : *ImGui.ImDrawData, fb_width :
 // This is in order to be able to run within an OpenGL engine that doesn't do so.
 ImGui_ImplOpenGL3_RenderDrawData :: (draw_data : *ImGui.ImDrawData) {
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
-    // int fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
-    // int fb_height = (int)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
-    // if (fb_width <= 0 || fb_height <= 0)
-    //     return;
     io := ImGui.GetIO();
-    fb_width : s32 = xx (io.DisplaySize.x * io.DisplayFramebufferScale.x); // @@
-    fb_height : s32 = xx (io.DisplaySize.y * io.DisplayFramebufferScale.y); // @@
+    fb_width : s32 = xx (io.DisplaySize.x * io.DisplayFramebufferScale.x);
+    fb_height : s32 = xx (io.DisplaySize.y * io.DisplayFramebufferScale.y);
     if fb_width <= 0 || fb_height <= 0
         return;
 
@@ -190,9 +180,7 @@ ImGui_ImplOpenGL3_RenderDrawData :: (draw_data : *ImGui.ImDrawData) {
                 //     ImGui_ImplOpenGL3_SetupRenderState(draw_data, fb_width, fb_height, vertex_array_object);
                 // else
                     pcmd.UserCallback(cmd_list, pcmd);
-            }
-            else
-            {
+            } else {
                 // Project scissor/clipping rectangles into framebuffer space
                 clip_rect : ImGui.ImVec4;
                 clip_rect.x = (pcmd.ClipRect.x - clip_off.x) * clip_scale.x;
@@ -316,8 +304,7 @@ CheckProgram :: (handle : GLuint, desc : string) -> bool {
     glGetProgramiv(handle, GL_INFO_LOG_LENGTH, *log_length);
     if xx status == GL_FALSE
         print("ERROR: ImGui_ImplOpenGL3_CreateDeviceObjects: failed to link %! (with GLSL '%')\n", desc, g_GlslVersionString);
-    // if (log_length > 1)
-    // {
+    // if (log_length > 1) {
     //     ImVector<char> buf;
     //     buf.resize((int)(log_length + 1));
     //     glGetProgramInfoLog(handle, log_length, NULL, (GLchar*)buf.begin());
@@ -351,7 +338,7 @@ ImGui_ImplOpenGL3_CreateDeviceObjects :: () -> bool {
            gl_Position = ProjMtx * vec4(Position.xy,0,1);
         }
     END,
-        ifx IMGUI_USE_BGRA_PACKED_COLOR then "bgra" else "rgba"); // @@ Did I compile imgui correctly?
+        ifx ImGui.IMGUI_USE_BGRA_PACKED_COLOR then "bgra" else "rgba");
 
     fragment_shader := #string END
         #version 330
@@ -439,3 +426,8 @@ ImGui_ImplOpenGL3_InitPlatformInterface :: () {
 ImGui_ImplOpenGL3_ShutdownPlatformInterface :: () {
     ImGui.DestroyPlatformWindows();
 }
+
+#scope_file
+
+ImGui :: #import "imgui"(LINK_STATIC=true);
+#import "GL";

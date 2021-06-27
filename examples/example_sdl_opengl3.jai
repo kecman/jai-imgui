@@ -4,7 +4,7 @@
 // If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
 // Read online: https://github.com/ocornut/imgui/tree/master/docs
 
-// ImGui :: #import "imgui"(LINK_STATIC=true);
+ImGui :: #import "imgui"(LINK_STATIC=true);
 #load "imgui_impl_sdl.jai"; // SDL platform backend
 #load "imgui_impl_opengl3.jai"; // OpenGL renderer backend
 #import "Basic";
