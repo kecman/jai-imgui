@@ -1,14 +1,10 @@
 #import "Basic";
 #import "Compiler";
 
-#run () {
-    opts := get_build_options();
-    opts.output_type = .NO_OUTPUT;
-    set_build_options(opts);
-
+main :: () {
     #load "jaicpp/jaicpp.jai";
     generate_imgui_bindings();
-}();
+}
 
 generate_imgui_bindings :: () {
     imgui_data: ImGui_Bindings_Gen_Data;
@@ -22,13 +18,8 @@ generate_imgui_bindings :: () {
         }
         #if OS == .LINUX {
             array_add(*libpaths,      "./linux");
-            array_add(*include_paths, "/usr/include/c++/10");
-            array_add(*include_paths, "/usr/include/x86_64-linux-gnu/c++/10");
-            array_add(*include_paths, "/usr/include/c++/10/backward");
-            array_add(*include_paths, "/usr/local/include");
-            array_add(*include_paths, "/usr/lib/llvm-12/lib/clang/12.0.0/include");
-            array_add(*include_paths, "/usr/include/x86_64-linux-gnu");
-            array_add(*include_paths, "/usr/include");
+            array_add(*include_paths, "/usr/lib/llvm-8/lib/clang/8.0.1/include/");
+            array_add(*include_paths, "/usr/include/");
         }
         array_add(*include_paths, "./imgui");
         array_add(*source_files,  "./jai-imgui.cpp");
@@ -51,6 +42,8 @@ generate_imgui_bindings :: () {
     has_error := generate_bindings(opts);
     if !has_error
         show_jaicc_results();
+    else
+        print("Didn't generate bindings! :(\n");
 }
 
 ImGui_Bindings_Gen_Data :: struct {
@@ -90,7 +83,7 @@ imgui_visitor :: (decl: *Declaration, parent_decl: *Declaration) -> Declaration_
             // Don't output the integer typedef
             decl.type.type_of_typedef.decl_flags |= .Omit_From_Output;
 
-            // Make sure the enums like "FocusedFlags_" get outputted as "FocusFlags"
+            // Make sure the enums like "FocusedFlags_" get outputted as "FocusedFlags"
             if en.name.count > 2 && en.name[en.name.count - 1] == #char "_" {
                 en.output_name = copy_string(en.name);
                 en.output_name.count -= 1;
@@ -210,6 +203,15 @@ make_ImVec2 :: inline (a: float, b: float) -> ImVec2 {
     v: ImVec2 = ---;
     v.x = a;
     v.y = b;
+    return v;
+}
+
+make_ImVec4 :: inline (a: float, b: float, c: float, d: float) -> ImVec4 {
+    v: ImVec4 = ---;
+    v.x = a;
+    v.y = b;
+    v.z = c;
+    v.w = d;
     return v;
 }
 

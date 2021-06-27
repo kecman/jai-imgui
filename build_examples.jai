@@ -3,11 +3,17 @@
 
 #run build();
 
+#if OS == .WINDOWS {
 examples :: string.[
-    // "example_no_graphics",
-    // "example_opengl",
+    "example_no_graphics",
+    "example_opengl",
     "example_sdl_opengl3",
 ];
+} else {
+examples :: string.[
+    "example_sdl_opengl3",
+];
+}
 
 build_file :: (filename: string, output_executable_name: string) {
     w := compiler_create_workspace("build");
@@ -49,7 +55,7 @@ build :: () {
 
     print("\nSUCCESS! built:\n");
     for examples
-        print("  %.exe\n", it);
+        print("  %1%2\n", it, ifx OS == .WINDOWS then ".exe" else "");
 
 }
 
