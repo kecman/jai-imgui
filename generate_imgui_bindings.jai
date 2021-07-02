@@ -12,21 +12,24 @@ generate_imgui_bindings :: () {
     opts: Generate_Bindings_Options;
     {
         using opts;
+
         array_add(*libnames,      "imgui");
-        #if OS == .WINDOWS {
-            array_add(*libpaths,      "./win/dll");
-        }
-        #if OS == .LINUX {
-            array_add(*libpaths,      "./linux");
-            array_add(*include_paths, "/usr/lib/llvm-8/lib/clang/8.0.1/include/");
-            array_add(*include_paths, "/usr/include/");
-        }
         array_add(*include_paths, "./imgui");
         array_add(*source_files,  "./jai-imgui.cpp");
         array_add(*flatten_namespaces, "ImGui");
+
+        #if OS == .WINDOWS {
+            array_add(*libpaths,      "./win/dll");
+            output_filename = "windows.jai";
+        } else if OS == .LINUX {
+            array_add(*libpaths,      "./linux");
+            array_add(*include_paths, "/usr/lib/llvm-8/lib/clang/8.0.1/include/");
+            array_add(*include_paths, "/usr/include/");
+            output_filename = "linux.jai";
+        }
+
         strip_prefix             = "ImGui";
         omit_global_declarations = true;
-        output_filename          = "imgui.jai";
         user_data                = *imgui_data;
         preamble                 = imgui_preamble;
         print_foreign_library_declarations = false;
