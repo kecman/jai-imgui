@@ -225,6 +225,14 @@ TreeNode :: (fmt: string, args: ..Any) -> bool {
     return TreeNode(txt.data);
 }
 
+TextColored :: (col: ImVec4, fmt: string, args: .. Any) {
+    PushStyleColor(.Text, col);
+    fmt_z := tprint("%\0", fmt);
+    txt := tprint(fmt_z, ..args);
+    Text(txt.data);
+    PopStyleColor();
+}
+
 #if Preprocessor_Defines.USE_BGRA_PACKED_COLOR {
     IM_COL32_R_SHIFT :: 16;
     IM_COL32_G_SHIFT :: 8;
