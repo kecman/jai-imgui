@@ -57,8 +57,8 @@ ImGui_ImplSDL2_ProcessEvent :: (event : *SDL_Event) -> bool {
             return true;
     case SDL_KEYDOWN; #through;
     case SDL_KEYUP;
-            key := event.key.keysym.scancode;
-            assert(key >= 0 && xx key < io.KeysDown.count);
+            //@@key := event.key.keysym.sym & ~SDLK_SCANCODE_MASK;
+            key := event.key.keysym.sym & (xx ~(1<<30));
             io.KeysDown[key] = (event.type == SDL_KEYDOWN);
             io.KeyShift = ((SDL_GetModState() & KMOD_SHIFT) != 0);
             io.KeyCtrl = ((SDL_GetModState() & KMOD_CTRL) != 0);
@@ -93,11 +93,11 @@ ImGui_ImplSDL2_Init :: (window : *SDL_Window) -> bool {
     io.KeyMap[ImGui.Key.Home] = xx SDL_SCANCODE_HOME;
     io.KeyMap[ImGui.Key.End] = xx SDL_SCANCODE_END;
     io.KeyMap[ImGui.Key.Insert] = xx SDL_SCANCODE_INSERT;
-    io.KeyMap[ImGui.Key.Delete] = xx SDL_SCANCODE_DELETE;
-    io.KeyMap[ImGui.Key.Backspace] = xx SDL_SCANCODE_BACKSPACE;
+    io.KeyMap[ImGui.Key.Delete] = xx SDLK_DELETE; // SDL_SCANCODE_DELETE;
+    io.KeyMap[ImGui.Key.Backspace] = xx SDLK_BACKSPACE; // SDL_SCANCODE_BACKSPACE;
     io.KeyMap[ImGui.Key.Space] = xx SDL_SCANCODE_SPACE;
-    io.KeyMap[ImGui.Key.Enter] = xx SDL_SCANCODE_RETURN;
-    io.KeyMap[ImGui.Key.Escape] = xx SDL_SCANCODE_ESCAPE;
+    io.KeyMap[ImGui.Key.Enter] = xx SDLK_RETURN; // SDL_SCANCODE_RETURN
+    io.KeyMap[ImGui.Key.Escape] = xx SDLK_ESCAPE; // SDL_SCANCODE_ESCAPE;
     io.KeyMap[ImGui.Key.KeyPadEnter] = xx SDL_SCANCODE_KP_ENTER;
     io.KeyMap[ImGui.Key.A] = xx SDLK_a; // SDL_SCANCODE_A;
     io.KeyMap[ImGui.Key.C] = xx SDLK_c; // SDL_SCANCODE_C;
